@@ -1,3 +1,7 @@
+volumes:
+  pgdata:
+  ivy-cache:
+
 services:
   kafka:
     image: apache/kafka:latest
@@ -77,5 +81,22 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-volumes:
-  pgdata:
+  spark-bronze:
+    build:
+      context: .
+      dockerfile: docker/spark/Dockerfile
+    image: tfl-spark:latest
+    container_name: spark-bronze
+    command: ["python", "-m", "tfl.streams.bronze"]
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "4040:4040"
+    volumes:
+      - ./lake:/app/lake
+      - ivy-cache:/root/.ivy2
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    restart: unless-stopped

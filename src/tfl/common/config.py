@@ -13,3 +13,6 @@ class Settings(BaseSettings):
     tfl_app_key: str | None = None
     poll_interval_seconds: int = 60
     request_timeout_seconds: int = 10
+
+    lake_root: str = "/app/lake"
+    checkpoint_root: str = "/app/lake/_checkpoints"
