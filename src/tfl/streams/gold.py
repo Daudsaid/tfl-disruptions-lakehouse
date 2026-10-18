@@ -45,16 +45,28 @@ def current_status(line_polls: DataFrame) -> DataFrame:
     return line_polls.withColumn("_rn", F.row_number().over(w)).filter("_rn = 1").drop("_rn")
 
 
-def detect_changes(line_polls: DataFrame) -> DataFrame:
-    """A row only when a line's state or severity differs from its previous poll."""
+def detect_changes(line_polls: DataFrame, gap_minutes: int = 5) -> DataFrame:
+    """A row only when a line's state or severity differs from its previous poll.
+
+    after_gap=True: the previous poll was more than gap_minutes earlier, so changed_at
+    is when we first SAW the new state, not necessarily when it changed.
+    """
     w = Window.partitionBy("line_id").orderBy("polled_at")
     return (
         line_polls.withColumn("prev_state", F.lag("state").over(w))
         .withColumn("prev_severity", F.lag("worst_severity").over(w))
+        .withColumn("prev_at", F.lag("polled_at").over(w))
         .filter(
             F.col("prev_state").isNull()
             | (F.col("state") != F.col("prev_state"))
             | (F.col("worst_severity") != F.col("prev_severity"))
+        )
+        .withColumn(
+            "after_gap",
+            F.coalesce(
+                (F.col("polled_at").cast("long") - F.col("prev_at").cast("long")) > gap_minutes * 60,
+                F.lit(False),
+            ),
         )
         .select(
             "line_id",
@@ -66,6 +78,7 @@ def detect_changes(line_polls: DataFrame) -> DataFrame:
             "worst_severity",
             "status_description",
             "reason",
+            "after_gap",
         )
     )
 
@@ -175,7 +188,7 @@ def main() -> None:
             df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").save(f"{lake}/gold/{name}")
 
         # Status changes: incremental. Kafka first, then Delta -> at-least-once delivery to Kafka.
-        changes = detect_changes(line_polls)
+        changes = detect_changes(line_polls, settings.episode_gap_minutes)
         if DeltaTable.isDeltaTable(spark, changes_path):
             existing = spark.read.format("delta").load(changes_path).select("line_id", "changed_at")
             changes = changes.join(existing, ["line_id", "changed_at"], "left_anti")
