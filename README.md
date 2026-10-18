@@ -145,12 +145,6 @@ Covered: event construction, JSON validation and quarantine, status explosion an
 └── .github/workflows/ci.yml
 ```
 
-## Roadmap
-
-- Add the TfL arrivals feed (thousands of events a minute) to exercise watermarks, windowed aggregations and partitioning at real streaming volume
-- Persist Kafka data with a volume and add Schema Registry (Avro/Protobuf) for schema evolution
-- Incremental gold processing instead of full rebuilds
-- Deploy the same transforms to Databricks (Auto Loader, Unity Catalog, Jobs)
 
 ---
 
