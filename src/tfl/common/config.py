@@ -17,3 +17,15 @@ class Settings(BaseSettings):
     lake_root: str = "/app/lake"
     checkpoint_root: str = "/app/lake/_checkpoints"
     topic_dlq: str = "tfl.dlq"
+    topic_status_changes: str = "tfl.status_changes"
+    episode_gap_minutes: int = 5
+
+    postgres_host: str = "postgres"
+    postgres_port: int = 5432
+    postgres_db: str = "tfl"
+    postgres_user: str = "tfl"
+    postgres_password: str = ""
+
+    @property
+    def jdbc_url(self) -> str:
+        return f"jdbc:postgresql://{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"

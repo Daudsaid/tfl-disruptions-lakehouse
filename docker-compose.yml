@@ -118,3 +118,23 @@ services:
       spark-bronze:
         condition: service_started
     restart: unless-stopped
+
+  spark-gold:
+    image: tfl-spark:latest
+    container_name: spark-gold
+    command: ["python", "-m", "tfl.streams.gold"]
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "4042:4040"
+    volumes:
+      - ./src:/app/src
+      - ./lake:/app/lake
+      - ivy-cache:/root/.ivy2
+    depends_on:
+      spark-silver:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
