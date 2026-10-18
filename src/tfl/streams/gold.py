@@ -161,17 +161,37 @@ def main() -> None:
     changes_path = f"{lake}/gold/status_changes"
 
     def to_postgres(df: DataFrame, table: str) -> None:
+        """Write to a staging table, then swap it in one transaction.
+
+        Readers (the dashboard) never see a half-written or empty table.
+        """
+        staging = f"{table}__staging"
         (
             df.write.format("jdbc")
             .option("url", settings.jdbc_url)
-            .option("dbtable", table)
+            .option("dbtable", staging)
             .option("user", settings.postgres_user)
             .option("password", settings.postgres_password)
             .option("driver", "org.postgresql.Driver")
-            .option("truncate", "true")
             .mode("overwrite")
             .save()
         )
+        jvm = spark.sparkContext._jvm
+        props = jvm.java.util.Properties()
+        props.setProperty("user", settings.postgres_user)
+        props.setProperty("password", settings.postgres_password)
+        conn = jvm.org.postgresql.Driver().connect(settings.jdbc_url, props)
+        try:
+            conn.setAutoCommit(False)
+            stmt = conn.createStatement()
+            stmt.execute(f"DROP TABLE IF EXISTS {table}")
+            stmt.execute(f"ALTER TABLE {staging} RENAME TO {table}")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def process_batch(batch_df: DataFrame, batch_id: int) -> None:
         if batch_df.isEmpty():

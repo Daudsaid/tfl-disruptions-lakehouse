@@ -42,6 +42,11 @@ def style_state(df: pd.DataFrame):
     return df.style.apply(lambda row: [STATE_STYLE.get(row["state"], "")] * len(row), axis=1)
 
 
+def fit_height(df: pd.DataFrame) -> int:
+    """Show every row without an inner scrollbar."""
+    return 35 * (len(df) + 1) + 3
+
+
 st.title("London Underground disruptions")
 st.caption("TfL API → Kafka → Spark Structured Streaming → Delta Lake → Postgres. Refreshes every minute.")
 
@@ -62,7 +67,7 @@ def live_section():
 
     st.subheader("Live board")
     board = current[["line_name", "state", "status_description", "reason"]]
-    st.dataframe(style_state(board), hide_index=True, use_container_width=True)
+    st.dataframe(style_state(board), hide_index=True, use_container_width=True, height=fit_height(board))
 
     left, right = st.columns(2)
 
@@ -118,7 +123,7 @@ else:
             color=alt.Color("type:N", scale=STATE_COLOURS, title=None),
             tooltip=["line_name", "type", "minutes"],
         )
-        .properties(height=320)
+        .properties(height=380)
     )
 
     hourly["hour"] = hourly["hour_utc"].dt.strftime("%a %H:00")
@@ -127,12 +132,12 @@ else:
         alt.Chart(hourly)
         .mark_rect()
         .encode(
-            x=alt.X("hour:N", sort=None, title="Hour (London)"),
-            y=alt.Y("line_name:N", title=None),
+            x=alt.X("hour:N", sort=None, title="Hour (London)", axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("line_name:N", title=None, axis=alt.Axis(labelOverlap=False)),
             color=alt.Color("unplanned_pct:Q", scale=alt.Scale(scheme="reds", domain=[0, 100]), title="% unplanned"),
             tooltip=["line_name", "hour", "unplanned_minutes", "minutes_observed"],
         )
-        .properties(height=320)
+        .properties(height=380)
     )
 
     a, b = st.columns(2)
@@ -141,8 +146,11 @@ else:
 
 st.subheader("Reliability (all data collected)")
 reliability = query(
-    "select line_name, round(100.0 * sum(good_minutes) / nullif(sum(minutes_observed), 0), 1) as pct_good_service, "
+    "select line_name, round(100.0 * (1 - sum(unplanned_minutes)::numeric / nullif(sum(minutes_observed), 0)), 1) as pct_no_unplanned, "
+    "round(100.0 * sum(good_minutes) / nullif(sum(minutes_observed), 0), 1) as pct_good_service, "
     "sum(planned_minutes) as planned_minutes, sum(unplanned_minutes) as unplanned_minutes, "
-    "sum(minutes_observed) as minutes_observed from disruptions_by_hour group by line_name order by pct_good_service"
+    "sum(minutes_observed) as minutes_observed from disruptions_by_hour group by line_name order by pct_no_unplanned, pct_good_service"
 )
-st.dataframe(reliability, hide_index=True, use_container_width=True)
+st.dataframe(reliability, hide_index=True, use_container_width=True, height=fit_height(reliability))
+st.caption("pct_no_unplanned excludes planned closures (engineering works, scheduled non-running), "
+           "so it reflects unexpected problems only.")
