@@ -148,4 +148,12 @@ Covered: event construction, JSON validation and quarantine, status explosion an
 
 ---
 
+## Author
+
+**Daud Abdi**, Associate Data Engineer, London, UK
+
+[daudabdi.com](https://daudabdi.com) · [LinkedIn](https://www.linkedin.com/in/daudabdi0506) · [GitHub](https://github.com/Daudsaid) · [daudsaidabdi@gmail.com](mailto:daudsaidabdi@gmail.com)
+
+---
+
 Data: [Transport for London Unified API](https://api.tfl.gov.uk/). Powered by TfL Open Data.
