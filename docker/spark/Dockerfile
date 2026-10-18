@@ -12,6 +12,6 @@ ENV UV_COMPILE_BYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --group spark --no-install-project
+RUN uv sync --frozen --group spark --no-install-project
 
 COPY src ./src

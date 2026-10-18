@@ -35,7 +35,7 @@ GOOD_SERVICE = 10
 def parse_bronze(bronze_df: DataFrame) -> DataFrame:
     """Parse raw JSON and flag each row as valid or not. Never drops rows."""
     parsed = bronze_df.withColumn("e", F.from_json("raw_value", EVENT_SCHEMA)).withColumn(
-        "polled_at_ts", F.to_timestamp("e.polled_at", "yyyy-MM-dd'T'HH:mm:ss'Z'")
+        "polled_at_ts", F.try_to_timestamp("e.polled_at", F.lit("yyyy-MM-dd'T'HH:mm:ss'Z'"))
     )
     is_valid = (
         F.col("e.event_id").isNotNull()
