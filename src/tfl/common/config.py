@@ -16,3 +16,4 @@ class Settings(BaseSettings):
 
     lake_root: str = "/app/lake"
     checkpoint_root: str = "/app/lake/_checkpoints"
+    topic_dlq: str = "tfl.dlq"

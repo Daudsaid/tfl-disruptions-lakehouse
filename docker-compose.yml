@@ -100,3 +100,21 @@ services:
       kafka-init:
         condition: service_completed_successfully
     restart: unless-stopped
+
+  spark-silver:
+    image: tfl-spark:latest
+    container_name: spark-silver
+    command: ["python", "-m", "tfl.streams.silver"]
+    env_file: .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "4041:4040"
+    volumes:
+      - ./src:/app/src
+      - ./lake:/app/lake
+      - ivy-cache:/root/.ivy2
+    depends_on:
+      spark-bronze:
+        condition: service_started
+    restart: unless-stopped
