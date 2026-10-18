@@ -4,9 +4,9 @@ import pytest
 
 pytest.importorskip("pyspark")
 
-from chispa import assert_df_equality  # noqa: E402
+from chispa import assert_df_equality
 
-from tfl.streams.gold import build_episodes, detect_changes, to_line_polls  # noqa: E402
+from tfl.streams.gold import build_episodes, detect_changes, to_line_polls
 
 T0 = datetime(2026, 10, 18, 10, 0)
 POLLS_SCHEMA = (

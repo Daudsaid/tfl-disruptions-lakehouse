@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from tfl.producer.poller import to_events
 
@@ -17,7 +17,7 @@ SAMPLE = [
         ],
     },
 ]
-POLLED_AT = datetime(2026, 10, 16, 11, 0, tzinfo=timezone.utc)
+POLLED_AT = datetime(2026, 10, 16, 11, 0, tzinfo=UTC)
 
 
 def test_one_event_per_line_keyed_by_line_id():

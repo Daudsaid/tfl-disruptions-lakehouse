@@ -5,9 +5,9 @@ import pytest
 
 pytest.importorskip("pyspark")
 
-from pyspark.sql import Row  # noqa: E402
+from pyspark.sql import Row
 
-from tfl.streams.silver import parse_bronze, to_silver  # noqa: E402
+from tfl.streams.silver import parse_bronze, to_silver
 
 GOOD = [{"severity": 10, "description": "Good Service", "reason": None}]
 

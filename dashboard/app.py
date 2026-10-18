@@ -4,6 +4,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 
 from tfl.common.config import Settings
 
@@ -55,7 +56,7 @@ st.caption("TfL API → Kafka → Spark Structured Streaming → Delta Lake → 
 def live_section():
     try:
         current = to_london(query("select * from current_status order by worst_severity, line_name"), ["polled_at"])
-    except Exception:
+    except SQLAlchemyError:  # table not created yet / DB not ready
         st.info("Waiting for the gold stream to write its first batch...")
         return
 

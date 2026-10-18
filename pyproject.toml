@@ -1,7 +1,7 @@
 [project]
 name = "tfl-disruptions-lakehouse"
 version = "0.1.0"
-description = "Add your description here"
+description = "Real-time London Underground disruption pipeline: Kafka, Spark Structured Streaming, Delta Lake, Postgres and Streamlit"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -30,3 +30,8 @@ spark = [
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["lake"]

@@ -4,7 +4,7 @@ import json
 import logging
 import signal
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 from confluent_kafka import KafkaError, Message, Producer
@@ -63,7 +63,7 @@ def on_delivery(err: KafkaError | None, msg: Message) -> None:
 def current_slot(interval: int) -> datetime:
     """Align polls to fixed slots (e.g. every whole minute) so event_ids are stable on retry."""
     epoch = int(time.time()) // interval * interval
-    return datetime.fromtimestamp(epoch, tz=timezone.utc)
+    return datetime.fromtimestamp(epoch, tz=UTC)
 
 
 def main() -> None:
