@@ -12,6 +12,8 @@ dependencies = [
 
 [dependency-groups]
 dashboard = [
+    "psycopg[binary]>=3.3.6",
+    "sqlalchemy>=2.1.5",
     "streamlit>=1.66.0",
 ]
 dev = [
