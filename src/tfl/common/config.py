@@ -25,7 +25,11 @@ class Settings(BaseSettings):
     postgres_db: str = "tfl"
     postgres_user: str = "tfl"
     postgres_password: str = ""
+    postgres_sslmode: str = "prefer"  # set to "require" for a hosted database such as Neon
 
     @property
     def jdbc_url(self) -> str:
-        return f"jdbc:postgresql://{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        return (
+            f"jdbc:postgresql://{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+            f"?sslmode={self.postgres_sslmode}"
+        )

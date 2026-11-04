@@ -1,0 +1,7 @@
+# Used by Streamlit Community Cloud (the Docker image uses the `dashboard` group in pyproject.toml).
+streamlit>=1.66.0
+altair
+pandas
+sqlalchemy>=2.1.5
+psycopg[binary]>=3.3.6
+pydantic-settings>=2.16.0

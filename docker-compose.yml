@@ -146,7 +146,7 @@ services:
     container_name: dashboard
     env_file: .env
     environment:
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
     ports:
       - "8501:8501"
     volumes:

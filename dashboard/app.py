@@ -1,9 +1,15 @@
 """Live London Underground disruptions dashboard. Reads the Postgres serving layer."""
 
+import sys
+from pathlib import Path
+
+# Make `tfl` importable on Streamlit Community Cloud, which runs from the repo without installing it.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
 import altair as alt
 import pandas as pd
 import streamlit as st
-from sqlalchemy import create_engine, text
+from sqlalchemy import URL, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from tfl.common.config import Settings
@@ -22,7 +28,15 @@ STATE_COLOURS = alt.Scale(domain=["planned", "unplanned"], range=["#f9a825", "#c
 @st.cache_resource
 def get_engine():
     s = Settings()
-    url = f"postgresql+psycopg://{s.postgres_user}:{s.postgres_password}@{s.postgres_host}:{s.postgres_port}/{s.postgres_db}"
+    url = URL.create(
+        "postgresql+psycopg",
+        username=s.postgres_user,
+        password=s.postgres_password,
+        host=s.postgres_host,
+        port=s.postgres_port,
+        database=s.postgres_db,
+        query={"sslmode": s.postgres_sslmode},
+    )
     return create_engine(url, pool_pre_ping=True)
 
 
@@ -68,7 +82,7 @@ def live_section():
 
     st.subheader("Live board")
     board = current[["line_name", "state", "status_description", "reason"]]
-    st.dataframe(style_state(board), hide_index=True, use_container_width=True, height=fit_height(board))
+    st.dataframe(style_state(board), hide_index=True, width="stretch", height=fit_height(board))
 
     left, right = st.columns(2)
 
@@ -76,7 +90,7 @@ def live_section():
         st.subheader("Recent status changes")
         changes = to_london(query("select * from status_changes order by changed_at desc limit 20"), ["changed_at"])
         cols = [c for c in ["changed_at", "line_name", "prev_state", "state", "status_description", "after_gap"] if c in changes.columns]
-        st.dataframe(changes[cols], hide_index=True, use_container_width=True)
+        st.dataframe(changes[cols], hide_index=True, width="stretch")
         st.caption("after_gap = first seen after a polling gap, so the real change time is unknown.")
 
     with right:
@@ -88,7 +102,7 @@ def live_section():
             ),
             ["started_at", "last_seen_at"],
         )
-        st.dataframe(style_state(episodes), hide_index=True, use_container_width=True)
+        st.dataframe(style_state(episodes), hide_index=True, width="stretch")
         st.caption("ended_by_gap = polling stopped, so the episode's true end is unknown.")
 
 
@@ -142,8 +156,8 @@ else:
     )
 
     a, b = st.columns(2)
-    a.altair_chart(bars, use_container_width=True)
-    b.altair_chart(heat, use_container_width=True)
+    a.altair_chart(bars, width="stretch")
+    b.altair_chart(heat, width="stretch")
 
 st.subheader("Reliability (all data collected)")
 reliability = query(
@@ -152,6 +166,6 @@ reliability = query(
     "sum(planned_minutes) as planned_minutes, sum(unplanned_minutes) as unplanned_minutes, "
     "sum(minutes_observed) as minutes_observed from disruptions_by_hour group by line_name order by pct_no_unplanned, pct_good_service"
 )
-st.dataframe(reliability, hide_index=True, use_container_width=True, height=fit_height(reliability))
+st.dataframe(reliability, hide_index=True, width="stretch", height=fit_height(reliability))
 st.caption("pct_no_unplanned excludes planned closures (engineering works, scheduled non-running), "
            "so it reflects unexpected problems only.")

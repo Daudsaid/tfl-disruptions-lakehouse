@@ -117,6 +117,17 @@ The first build downloads Spark and takes a few minutes. Silver and gold may res
 
 Stop with `docker compose stop` (keeps data) and resume with `docker compose start`.
 
+
+## Publishing the dashboard (Streamlit Community Cloud)
+
+The pipeline still runs locally; only the serving layer moves to a free hosted Postgres ([Neon](https://neon.com)), which Streamlit Community Cloud can reach.
+
+1. Create a Neon project and copy its host, database, user and password.
+2. Put them in `.env` with `POSTGRES_SSLMODE=require` (see `.env.example`) and run `docker compose up -d --force-recreate spark-gold dashboard`. Gold now writes to Neon.
+3. On [share.streamlit.io](https://share.streamlit.io), deploy this repo with entrypoint `dashboard/app.py` (Python 3.12), and paste the same `POSTGRES_*` values into the app's Secrets.
+
+The dashboard is live while the pipeline runs and shows the last collected data when it doesn't. Neon's free compute pauses when idle, so the first page load after a quiet spell can take a second or two.
+
 ## Tests
 
 The transforms are pure functions (DataFrame in, DataFrame out), tested with small hand-built DataFrames:
