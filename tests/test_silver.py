@@ -53,6 +53,13 @@ def test_good_service_is_not_disrupted(spark):
     assert rows[0].is_disrupted is False
 
 
+
+def test_no_issues_counts_as_good_like_gold(spark):
+    raw = event(statuses=[{"severity": 18, "description": "No Issues", "reason": None}])
+    rows = to_silver(parse_bronze(bronze(spark, [raw])).filter("is_valid")).collect()
+    assert rows[0].is_disrupted is False
+
+
 @pytest.mark.parametrize(
     "raw",
     [

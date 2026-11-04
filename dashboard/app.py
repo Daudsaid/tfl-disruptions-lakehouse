@@ -55,7 +55,7 @@ st.caption("TfL API → Kafka → Spark Structured Streaming → Delta Lake → 
 @st.fragment(run_every="60s")
 def live_section():
     try:
-        current = to_london(query("select * from current_status order by worst_severity, line_name"), ["polled_at"])
+        current = to_london(query("select * from current_status order by severity_rank, line_name"), ["polled_at"])
     except SQLAlchemyError:  # table not created yet / DB not ready
         st.info("Waiting for the gold stream to write its first batch...")
         return

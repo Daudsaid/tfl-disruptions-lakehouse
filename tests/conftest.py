@@ -1,4 +1,11 @@
+import os
+import time
+
 import pytest
+
+# Spark returns naive datetimes in the machine's local time zone; pin it so tests pass anywhere (e.g. a UK Mac in BST).
+os.environ["TZ"] = "UTC"
+time.tzset()
 
 
 @pytest.fixture(scope="session")

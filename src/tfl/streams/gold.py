@@ -9,24 +9,20 @@ from pyspark.sql import DataFrame, Window
 from pyspark.sql import functions as F
 
 from tfl.common.config import Settings
+from tfl.common.severity import classify, severity_rank
 from tfl.common.spark import get_spark
-
-# TfL statusSeverity codes
-GOOD = [10, 18, 19]  # Good Service, No Issues, Information
-PLANNED = [4, 5, 11, 14, 16, 20]  # Planned Closure, Part Closure, Part Closed, Change of frequency, Not Running, Service Closed
-
-
-def classify(severity: F.Column) -> F.Column:
-    return F.when(severity.isin(GOOD), "good").when(severity.isin(PLANNED), "planned").otherwise("unplanned")
 
 
 def to_line_polls(silver: DataFrame) -> DataFrame:
     """One row per line per poll. Unplanned beats planned beats good when a line has several statuses."""
-    s = silver.withColumn("status_type", classify(F.col("status_severity")))
+    s = silver.withColumn("status_type", classify(F.col("status_severity"))).withColumn(
+        "_rank", severity_rank(F.col("status_severity"))
+    )
     return (
         s.groupBy("line_id", "line_name", "polled_at")
         .agg(
-            F.min("status_severity").alias("worst_severity"),
+            F.min_by("status_severity", "_rank").alias("worst_severity"),
+            F.min("_rank").alias("severity_rank"),
             F.max((F.col("status_type") == "unplanned").cast("int")).alias("_unplanned"),
             F.max((F.col("status_type") == "planned").cast("int")).alias("_planned"),
             F.concat_ws(" / ", F.array_sort(F.collect_set("status_description"))).alias("status_description"),
@@ -112,13 +108,14 @@ def build_episodes(line_polls: DataFrame, gap_minutes: int = 5) -> DataFrame:
 
     return (
         islands.filter(F.col("state") != "good")
+        .withColumn("_rank", severity_rank(F.col("worst_severity")))
         .groupBy("line_id", "line_name", "island_id", "state")
         .agg(
             F.min("polled_at").alias("started_at"),
             F.max("polled_at").alias("last_seen_at"),
             F.count("*").alias("polls"),
-            F.min("worst_severity").alias("worst_severity"),
-            F.min_by("status_description", "worst_severity").alias("status_description"),
+            F.min_by("worst_severity", "_rank").alias("worst_severity"),
+            F.min_by("status_description", "_rank").alias("status_description"),
             F.max("reason").alias("reason"),
             F.max_by("next_at", "polled_at").alias("next_poll_at"),
             F.max("line_latest").alias("line_latest"),

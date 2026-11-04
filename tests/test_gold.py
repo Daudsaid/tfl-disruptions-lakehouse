@@ -33,9 +33,23 @@ def test_unplanned_beats_planned_when_a_line_has_both(spark):
         ],
         "line_id string, line_name string, polled_at timestamp, status_severity int, status_description string, reason string",
     )
-    expected = spark.createDataFrame([("victoria", 5, "unplanned")], "line_id string, worst_severity int, state string")
+    # The worst status must agree with the state: Minor Delays (9), not Part Closure (5).
+    expected = spark.createDataFrame([("victoria", 9, "unplanned")], "line_id string, worst_severity int, state string")
     result = to_line_polls(silver).select("line_id", "worst_severity", "state")
     assert_df_equality(result, expected, ignore_nullable=True)
+
+
+
+def test_not_running_sorts_worse_than_good_service(spark):
+    silver = spark.createDataFrame(
+        [
+            ("waterloo-city", "Waterloo & City", T0, 16, "Not Running", None),
+            ("victoria", "Victoria", T0, 10, "Good Service", None),
+        ],
+        "line_id string, line_name string, polled_at timestamp, status_severity int, status_description string, reason string",
+    )
+    order = [r.line_id for r in to_line_polls(silver).orderBy("severity_rank").collect()]
+    assert order == ["waterloo-city", "victoria"]
 
 
 def test_single_episode_between_good_service(spark):

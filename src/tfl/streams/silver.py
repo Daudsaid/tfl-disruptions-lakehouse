@@ -6,6 +6,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, IntegerType, StringType, StructField, StructType
 
 from tfl.common.config import Settings
+from tfl.common.severity import GOOD
 from tfl.common.spark import get_spark
 
 EVENT_SCHEMA = StructType(
@@ -29,7 +30,6 @@ EVENT_SCHEMA = StructType(
         ),
     ]
 )
-GOOD_SERVICE = 10
 
 
 def parse_bronze(bronze_df: DataFrame) -> DataFrame:
@@ -60,7 +60,7 @@ def to_silver(valid_df: DataFrame) -> DataFrame:
             F.col("s.severity").alias("status_severity"),
             F.col("s.description").alias("status_description"),
             F.col("s.reason").alias("reason"),
-            (F.col("s.severity") != GOOD_SERVICE).alias("is_disrupted"),
+            (~F.col("s.severity").isin(GOOD)).alias("is_disrupted"),
             F.col("e.schema_version").alias("schema_version"),
             F.col("partition").alias("kafka_partition"),
             F.col("offset").alias("kafka_offset"),
