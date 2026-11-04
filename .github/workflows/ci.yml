@@ -30,8 +30,30 @@ jobs:
       - name: Test
         run: uv run pytest -v
 
+  # Only rebuild images when something that affects them changes.
+  changes:
+    name: Detect Docker changes
+    runs-on: ubuntu-latest
+    outputs:
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            docker:
+              - 'docker/**'
+              - 'docker-compose.yml'
+              - '.dockerignore'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/ci.yml'
+
   docker-build:
     name: Build Docker images
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
